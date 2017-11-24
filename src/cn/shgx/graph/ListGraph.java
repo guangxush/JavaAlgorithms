@@ -15,7 +15,7 @@ public class ListGraph {
 	public ListGraph(int[] vertexes) {
 		nodes = new ListGraphNode[vertexes.length];
 		for(int i=0;i<vertexes.length;i++) {
-			nodes[i] = new ListGraphNode(vertexes[i], null);
+			nodes[i] = new ListGraphNode(i,vertexes[i], null);
 			value2index.put(vertexes[i], i);
 		}
 	}
@@ -23,8 +23,9 @@ public class ListGraph {
 	 * 添加start到可达的边
 	 * @param start起始顶点
 	 * @param end可到达的顶点数组
+	 * @weights 对应的权值数组
 	 */
-	public void addEdges(int start,int[] end) {
+	public void addEdges(int start,int[] end,int[] weights) {
 		int index = value2index.get(start);
 		if(index<0) {
 			throw new RuntimeException("未找到指定的起始顶点");
@@ -35,7 +36,7 @@ public class ListGraph {
 			if(i<0) {
 				throw new RuntimeException("未找到指定的到达顶点");
 			}
-			node.next = new ListGraphNode(i, end[j],null);
+			node.next = new ListGraphNode(i, end[j],weights[j],null);
 			node = node.next;
 		}
 		/*for(int i=0;i<nodes.length;i++) {
@@ -143,6 +144,76 @@ public class ListGraph {
 				unvisited = getUnVisited(visited);
 			}
 			System.out.println();
+		}
+	}
+	public void dijkstra(int start) {
+		int length = nodes.length;
+		int x = value2index.get(start);//根据哈希表获取对应值的下标
+		if(x==-1) {
+			throw new RuntimeException("未找到起始顶点");
+		}
+		int[] S = new int[length];//自动初始化为0，都属于未得到最短路径的顶点
+		int[][] distance = new int [length][length];//存储v到u的最短距离
+		int[] path = new int[length];//存储x到u的最短路径时的前一个顶点
+		//初始化distance和path数组
+		for(int i=0;i<length;i++) {
+			//先初始化path都为-1
+			path[i] = -1;
+		}
+		for(int i=0;i<length;i++) {
+			ListGraphNode node = nodes[i];
+			node =node.next;
+			while(node!=null) {
+				distance[i][node.index]=node.weight;
+				if(x==i) {
+					//如果x是顶点的链表，则初始化为所有可达顶点的前一个顶点s
+					path[node.index]=x;
+				}
+				node = node.next;
+			}
+		}
+		//先把起始顶点放入S中
+		S[x] = 1;
+		for(int i=0;i<length;i++) {
+			//首先需要寻找start顶点到各顶点的最短路径
+			int min = Integer.MAX_VALUE;
+			int v = 0;
+			for(int j=0;j<length;j++) {
+				//S[j]==1说明已经找到最短路径
+				//需要过滤掉不可达的情况
+				if(S[j]!=1&&x!=j&&distance[x][j]!=0&&distance[x][j]<min) {
+					min = distance[x][j];
+					v = j;
+				}
+			}
+		   //v是目前x到各个顶点最短的一个
+			S[v]=1;
+			//修正最短距离distance以及最短路径
+			for(int j =0;j<length;j++) {
+				//1.只修正未找到最短路径的
+				//2.修正后新顶点需可达
+				//3.如果使用新的最短路径比原有路径短，或者以前不可达，使用新的最短路径可达了
+				//符合上面三点，则可以修正最短路径
+				if(S[j]!=1&&distance[v][j]!=0&&(min+distance[v][j]<distance[x][j]||distance[x][j]==0)) {
+					//说明加入中间顶点之后找到了更短的路径
+					distance[x][j]=min+distance[v][j];
+					path[j]=v;
+				}
+			}
+		}
+		//打印最短路径的值
+		for(int i =0;i<length;i++) {
+			if(distance[x][i]!=0) {
+				System.out.println(nodes[x].value+"-->"+nodes[i].value+": "+distance[x][i]);
+				//由于path存储的特性，可以逆序输出打印路径
+				System.out.println("逆序打印最短路径");
+				int index = i;
+				while(index!=-1) {
+					System.out.print(nodes[index].value);
+					index = path[index];
+				}
+				System.out.println();
+			}
 		}
 	}
 	
